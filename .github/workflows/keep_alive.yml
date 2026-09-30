@@ -12,11 +12,11 @@ jobs:
       - name: Ping Streamlit App
         run: |
           URL="https://genccobro-rwxh2xrpumqufkgqksuct.streamlit.app"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$URL")
+          STATUS=$(curl -sL -o /dev/null -w "%{http_code}" --max-time 60 "$URL")
           echo "HTTP status: $STATUS"
-          if [ "$STATUS" -eq 200 ]; then
-            echo "✅ App activa"
+          if [ "$STATUS" -eq 200 ] || [ "$STATUS" -eq 303 ]; then
+            echo "OK: App activa (status $STATUS)"
           else
-            echo "⚠️  Respuesta inesperada: $STATUS"
+            echo "AVISO: Respuesta inesperada: $STATUS"
             exit 1
           fi
