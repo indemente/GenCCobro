@@ -1,0 +1,13 @@
+name: Keep Streamlit App Awake
+on:
+  schedule:
+    # Se ejecuta cada 6 horas
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Permite ejecutarlo manualmente para probar
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit App
+        run: curl -s "genccobro-rwxh2xrpumqufkgqgksuct.streamlit.app" > /dev/null
