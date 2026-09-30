@@ -3,11 +3,12 @@
 Generador de Cuenta de Cobro — Streamlit
 Formato institucional para profesionales, técnicos y tecnólogos.
 Fuente: Arial (equivalente métrico a Helvetica).
+
+Los valores por defecto son de EJEMPLO — reemplázalos por los reales.
 """
 
 import os
 import re
-import io
 import shutil
 import subprocess
 import tempfile
@@ -19,7 +20,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
 # =====================================================================
-#  CONFIGURACIÓN
+#  CONFIGURACIÓN DE PÁGINA
 # =====================================================================
 st.set_page_config(
     page_title="Generador de Cuenta de Cobro",
@@ -81,7 +82,7 @@ def unir_asig(lst):
 
 
 # =====================================================================
-#  DECLARACIONES (texto genérico de ejemplo)
+#  DECLARACIONES (texto legal genérico)
 # =====================================================================
 DECLARACIONES = [
     ("Certifico que no tengo personas contratadas para el cumplimiento de "
@@ -98,7 +99,7 @@ DECLARACIONES = [
 
 
 # =====================================================================
-#  DATOS GENÉRICOS POR DEFECTO (solo para previsualización)
+#  DATOS DE EJEMPLO (el usuario los reemplaza en pantalla)
 # =====================================================================
 EMPRESA_DEFAULT      = "EMPRESA DE EJEMPLO S.A.S"
 NIT_EMPRESA_DEFAULT  = "900.000.000 - 0"
@@ -148,7 +149,7 @@ def generar_docx(datos, ruta_docx, ruta_firma=None):
         pf.line_spacing = Pt(line_pt)
         return p
 
-    # Fecha
+    # Fecha (opcional)
     if datos.get('fecha'):
         p = par(size=10, align=WD_ALIGN_PARAGRAPH.LEFT, line_pt=14, after=36)
         _aplicar_fuente(p.add_run(datos['fecha']), 10, False)
@@ -231,7 +232,7 @@ def generar_docx(datos, ruta_docx, ruta_firma=None):
     p = par(size=10, align=WD_ALIGN_PARAGRAPH.LEFT, line_pt=13, after=0)
     _aplicar_fuente(p.add_run("_" * 45), 10, False)
 
-    # FIRMA / datos
+    # FIRMA / datos de contacto
     p = par(size=10, align=WD_ALIGN_PARAGRAPH.LEFT, line_pt=13, after=0)
     _aplicar_fuente(p.add_run("FIRMA"), 10, False)
 
@@ -298,13 +299,14 @@ with st.sidebar:
     st.markdown("- El PDF se genera con LibreOffice en el servidor.")
     st.markdown("---")
     st.caption("Los valores por defecto son solo de ejemplo. "
-               "Cámbialos por tus datos reales.")
+               "Reemplázalos por tus datos reales.")
 
-# ---------- Datos generales ----------
+# ---------- 1. Datos generales ----------
 st.subheader("1. Datos generales")
 c1, c2 = st.columns([1, 3])
 with c1:
-    numero = st.text_input("N° de cuenta", value="01")
+    numero = st.text_input("N° de cuenta", value="01",
+                           help="Número consecutivo de la cuenta de cobro")
 with c2:
     fecha_opcional = st.text_input(
         "Fecha (opcional, déjala vacía si no quieres mostrarla)",
@@ -312,7 +314,7 @@ with c2:
         placeholder="Ej: Ciudad, 15 de enero de 2026",
     )
 
-# ---------- Empresa ----------
+# ---------- 2. Empresa ----------
 st.subheader("2. Empresa que contrata")
 c1, c2 = st.columns([2, 1])
 with c1:
@@ -320,7 +322,7 @@ with c1:
 with c2:
     nit_empresa = st.text_input("NIT de la empresa", value=NIT_EMPRESA_DEFAULT)
 
-# ---------- Docente ----------
+# ---------- 3. Docente ----------
 st.subheader("3. Docente")
 c1, c2, c3 = st.columns([2, 1, 1])
 with c1:
@@ -330,7 +332,7 @@ with c2:
 with c3:
     ciudad = st.text_input("Ciudad (CC)", value=CIUDAD_DEFAULT)
 
-# ---------- Período y horas ----------
+# ---------- 4. Período y horas ----------
 st.subheader("4. Período y horas")
 c1, c2, c3 = st.columns(3)
 with c1:
@@ -349,7 +351,7 @@ if horas.strip():
     except Exception:
         pass
 
-# ---------- Asignaturas ----------
+# ---------- 5. Asignaturas ----------
 st.subheader("5. Asignaturas")
 if "asignaturas" not in st.session_state:
     st.session_state.asignaturas = list(ASIGNATURAS_DEFAULT)
@@ -383,7 +385,7 @@ if nueva and nueva.endswith("\n"):
         st.session_state.asignaturas.append(t)
         st.rerun()
 
-# ---------- Valor ----------
+# ---------- 6. Valor ----------
 st.subheader("6. Valor")
 valor_str = st.text_input("Valor en pesos (sin puntos ni comas)",
                           value=VALOR_DEFAULT)
@@ -391,12 +393,12 @@ valor_limpio = re.sub(r'\D', '', valor_str)
 if valor_limpio:
     st.caption(f"→ En letras: *{num_letras(valor_limpio).capitalize()}*")
 
-# ---------- Firma ----------
+# ---------- 7. Firma ----------
 st.subheader("7. Firma")
 firma_file = st.file_uploader(
     "Sube tu firma (.png, .jpg)", type=["png", "jpg", "jpeg"])
 
-# ---------- Contacto ----------
+# ---------- 8. Contacto ----------
 st.subheader("8. Contacto (opcional)")
 c1, c2, c3 = st.columns(3)
 with c1:
@@ -509,14 +511,18 @@ if generar:
             st.warning("No se pudo generar el PDF. "
                        "Descarga el DOCX y conviértelo localmente.")
 
-    # Vista previa (si hay PDF)
+    # ---------- Vista previa (si hay PDF) ----------
     if rpdf and os.path.exists(rpdf):
         with st.expander("👁️ Vista previa del PDF"):
             try:
-                import pymupdf
-                doc = pymupdf.open(rpdf)
+                try:
+                    import pymupdf as fitz
+                except ImportError:
+                    import fitz  # versiones antiguas
+                doc = fitz.open(rpdf)
                 pagina = doc[0]
                 pix = pagina.get_pixmap(dpi=110)
                 st.image(pix.tobytes("png"), use_container_width=True)
             except ImportError:
-                st.info("Instala `pymupdf` para la vista previa.")
+                st.info("La vista previa no está disponible. "
+                        "Puedes descargar el PDF y verlo en tu equipo.")
